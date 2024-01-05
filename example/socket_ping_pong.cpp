@@ -8,7 +8,7 @@ using namespace std::chrono_literals;
 int main(int argc, const char **argv) {
     try {
         bool running = true;
-        auto sock = simple::TcpSocket::connect("localhost", "5000");
+        auto sock = simple::ClientSocket::connect("localhost", "5000");
         sock.setReceiveCallback([&running](std::vector<char> const & data) {
             fmt::print("recieved data: {}", data.data());
             std::string_view view{data};
