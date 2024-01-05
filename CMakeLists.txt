@@ -17,7 +17,8 @@ if (UNIX)
     target_sources(simpleSocket PRIVATE
             src/linux_socket.cpp
             src/linux_utils.cpp
-            src/linux_client.cpp
+            src/linux_client_socket.cpp
+            src/linux_server_socket.cpp
     )
     message(STATUS "Compiling for linux")
 

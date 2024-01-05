@@ -74,8 +74,10 @@ namespace simple {
 
                 if (m_callback) {
                     fmt::print("reading from socket\n");
-                    std::lock_guard lock{m_mutex};
-                    m_callback(read());
+
+                    if(const auto response = m_callback(read());!response.empty()) {
+                        send(response);
+                    }
                 }
             }
             fmt::print("worker thread shutting down");
@@ -85,9 +87,23 @@ namespace simple {
 
     void ClientSocket::shutDown() {
         std::lock_guard lock{m_mutex};
-        s_stop_token.request_stop();
+        if(s_stop_token.stop_possible()) {
+            s_stop_token.request_stop();
+        }
     }
 
     ClientSocket::ClientSocket(socket_t t_sock, Peer const &t_peer) : TcpSocket(t_sock, t_peer) {
+    }
+
+    ClientSocket::~ClientSocket() {
+        shutDown();
+        if(s_worker.joinable()) {
+            s_worker.join();
+        }
+        close();
+    }
+
+    void ClientSocket::stop() {
+        shutDown();
     }
 }
