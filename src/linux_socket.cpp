@@ -10,7 +10,19 @@
 namespace simple {
     static constexpr auto DEFAULT_BUFFER_SIZE = 1024;
 
+    TcpSocket::TcpSocket() :
+    m_socket{-1},
+    m_mutex{},
+    m_buffer_size{DEFAULT_BUFFER_SIZE},
+    m_peer{},
+    m_is_open{false}
+    {}
+
     std::vector<char> TcpSocket::read() {
+        if(!m_is_open) {
+            throw SocketError(fmt::format("socket not open"));
+        }
+
         std::vector<char> buffer(m_buffer_size);
 
         std::lock_guard lock{m_mutex};
@@ -26,10 +38,11 @@ namespace simple {
         return buffer;
     }
 
-    void TcpSocket::close() const {
+    void TcpSocket::close() {
         if (::close(m_socket) == -1) {
             throw SocketError(fmt::format("closing socket failed: {}", strerror(errno)));
         }
+        setIsOpen(false);
     }
 
     TcpSocket::TcpSocket(socket_t t_sock, Peer const &t_peer) :
@@ -43,6 +56,9 @@ namespace simple {
 
     void TcpSocket::send(std::vector<char> const &message) {
         if (message.empty()) { return; }
+        if(!m_is_open) {
+            throw SocketError(fmt::format("socket not open"));
+        }
 
         ssize_t sent_bytes = 0;
         const char *send_ptr = message.data();
@@ -62,4 +78,18 @@ namespace simple {
     Peer const &TcpSocket::getPeer() const {
         return m_peer;
     }
+
+    bool TcpSocket::isOpen() const {
+        return m_is_open;
+    }
+
+    void TcpSocket::setIsOpen(bool isOpen) {
+        m_is_open = isOpen;
+    }
+
+    void TcpSocket::setPeer(Peer const &peer) {
+        m_peer = peer;
+    }
+
+
 }

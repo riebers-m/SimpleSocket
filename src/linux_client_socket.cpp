@@ -12,8 +12,11 @@ namespace simple {
     static std::stop_source s_stop_token{};
     static std::jthread s_worker;
 
-    ClientSocket ClientSocket::connect(std::string_view const host, const std::string_view port) {
-        socket_t sock = 0;
+    ClientSocket::ClientSocket() : TcpSocket() {
+
+    }
+
+    void ClientSocket::connect(std::string_view const host, std::string_view const port) {
         struct addrinfo hints = {0};
         struct addrinfo *result, *rp = nullptr;
 
@@ -28,15 +31,15 @@ namespace simple {
         }
 
         for (rp = result; rp != nullptr; rp = rp->ai_next) {
-            sock = socket(rp->ai_family, rp->ai_socktype,
+            m_socket = socket(rp->ai_family, rp->ai_socktype,
                           rp->ai_protocol);
-            if (sock == -1)
+            if (m_socket == -1)
                 continue;
 
-            if (::connect(sock, rp->ai_addr, rp->ai_addrlen) != -1)
+            if (::connect(m_socket, rp->ai_addr, rp->ai_addrlen) != -1)
                 break;                  /* Success */
 
-            ::close(sock);
+            ::close(m_socket);
         }
 
         freeaddrinfo(result);           /* No longer needed */
@@ -44,7 +47,8 @@ namespace simple {
         if (rp == nullptr) {               /* No address succeeded */
             throw SocketError("could not connect");
         }
-        return ClientSocket{sock, Peer{std::string{host}, std::string{port}}};
+        setPeer({std::string{host}, std::string{port}});
+        setIsOpen(true);
     }
 
     void ClientSocket::setReceiveCallback(ReceiveCallback const &callback) {
@@ -64,6 +68,9 @@ namespace simple {
 
 
             while (!stop_token.stop_requested()) {
+                if(!isOpen()) {
+                    throw SocketError(fmt::format("socket {} not open", m_socket));
+                }
                 auto result = 0;
                 if (result = poll(fds, 1, 10);result == -1) {
                     fmt::print(fg(fmt::color::crimson) | fmt::emphasis::bold, "poll error: {}", strerror(errno));
@@ -92,7 +99,8 @@ namespace simple {
         }
     }
 
-    ClientSocket::ClientSocket(socket_t t_sock, Peer const &t_peer) : TcpSocket(t_sock, t_peer) {
+    ClientSocket::ClientSocket(socket_t t_sock, Peer const &t_peer, bool t_is_open) : TcpSocket(t_sock, t_peer) {
+        setIsOpen(t_is_open);
     }
 
     ClientSocket::~ClientSocket() {
@@ -106,4 +114,6 @@ namespace simple {
     void ClientSocket::stop() {
         shutDown();
     }
+
+
 }

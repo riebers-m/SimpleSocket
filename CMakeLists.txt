@@ -25,7 +25,7 @@ if (UNIX)
 elseif (WIN32)
     message(STATUS "Compiling for windows")
 endif ()
-target_link_libraries(simpleSocket fmt::fmt-header-only)
+target_link_libraries(simpleSocket PUBLIC fmt::fmt-header-only)
 
 add_executable(socket_ping_pong example/socket_ping_pong.cpp)
 target_link_libraries(socket_ping_pong PRIVATE simpleSocket)

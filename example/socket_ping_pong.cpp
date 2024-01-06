@@ -8,7 +8,9 @@ using namespace std::chrono_literals;
 void run_client() {
     try {
         bool running = true;
-        auto sock = simple::ClientSocket::connect("localhost", "5000");
+        auto sock = simple::ClientSocket{};
+        sock.connect("localhost", "5000");
+
         sock.setReceiveCallback([&running](std::vector<char> const & data) -> std::vector<char> const {
             fmt::print("recieved data: {}", data.data());
             std::string_view view{data};
@@ -32,7 +34,8 @@ void run_client() {
 }
 
 void run_server_sock() {
-    auto sock = simple::ServerSocket::bindAndListen("5000");
+    auto sock = simple::ServerSocket{};
+    sock.bindAndListen("5000");
     auto new_sock = sock.accept();
 
     fmt::print("accepted new connection from {}:{}\n", new_sock.getPeer().host, new_sock.getPeer().service);

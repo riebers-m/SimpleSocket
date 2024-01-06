@@ -7,10 +7,13 @@
 #include <thread>
 
 namespace simple {
-    ServerSocket ServerSocket::bindAndListen(std::string_view port, int t_backlog) {
+    ServerSocket::ServerSocket() : TcpSocket() {
+
+    }
+
+    void ServerSocket::bindAndListen(std::string_view port, int t_backlog) {
         struct addrinfo hints = {0};
         struct addrinfo *result, *rp = nullptr;
-        socket_t sfd, s = 0;
         struct sockaddr_storage peer_addr = {0};
         socklen_t peer_addr_len = 0;
 
@@ -23,33 +26,28 @@ namespace simple {
         hints.ai_addr = nullptr;
         hints.ai_next = nullptr;
 
-        s = getaddrinfo(nullptr, port.data(), &hints, &result);
-        if (s != 0) {
-            throw SocketError(fmt::format("listenAndBind getaddrinfo failed: {}", gai_strerror(s)));
+        if(const auto success= getaddrinfo(nullptr, port.data(), &hints, &result); success!=0){
+            throw SocketError(fmt::format("listenAndBind getaddrinfo failed: {}", gai_strerror(success)));
         }
 
         for (rp = result; rp != nullptr; rp = rp->ai_next) {
-            sfd = socket(rp->ai_family, rp->ai_socktype,
+            m_socket = socket(rp->ai_family, rp->ai_socktype,
                          rp->ai_protocol);
-            if (sfd == -1)
+            if (m_socket == -1)
                 continue;
 
-            if (bind(sfd, rp->ai_addr, rp->ai_addrlen) == 0)
+            if (bind(m_socket, rp->ai_addr, rp->ai_addrlen) == 0)
                 break;                  /* Success */
 
-            ::close(sfd);
+            ::close(m_socket);
         }
         freeaddrinfo(result);
 
-        if(listen(sfd, t_backlog) == -1) {
-            ::close(sfd);
-            throw SocketError(fmt::format("could not listen on socket {}: {}", sfd, strerror(errno)));
+        if(listen(m_socket, t_backlog) == -1) {
+            ::close(m_socket);
+            throw SocketError(fmt::format("could not listen on socket {}: {}", m_socket, strerror(errno)));
         }
-        return ServerSocket{sfd};
-    }
-
-    ServerSocket::ServerSocket(socket_t t_sock) : TcpSocket(t_sock, {}){
-
+        setIsOpen(true);
     }
 
     void ServerSocket::setAcceptCallback(ServerSocket::AcceptCallback const &accept_callback) {
@@ -62,7 +60,9 @@ namespace simple {
     }
 
     ClientSocket ServerSocket::accept() {
-
+        if(!isOpen()) {
+            throw SocketError(fmt::format("socket not open {}", m_socket));
+        }
         sockaddr_in client = {0};
         socklen_t client_addrLen = sizeof(client);
 
@@ -71,7 +71,9 @@ namespace simple {
             throw SocketError(fmt::format("could not accept incoming connection on socket {}: {}", m_socket, strerror(errno)));
         }
         return ClientSocket{clientSocket, Peer{inet_ntoa(client.sin_addr),
-                                               std::to_string(ntohs(client.sin_port))}};
+                                               std::to_string(ntohs(client.sin_port))}, true};
 
     }
+
+
 }
