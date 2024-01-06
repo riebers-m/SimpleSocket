@@ -2,7 +2,6 @@
 // Created by max on 03.01.24.
 //
 #include "simple_socket.hpp"
-#include "internal/simple_types.hpp"
 #include <cerrno>
 #include <unistd.h>
 #include <fmt/format.h>

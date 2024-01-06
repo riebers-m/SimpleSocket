@@ -4,9 +4,9 @@
 
 #ifndef SIMPLESOCKET_LINUX_DETAILS_HPP
 #define SIMPLESOCKET_LINUX_DETAILS_HPP
+#include <sys/types.h>
+#include <sys/socket.h>
 
-namespace simple {
-
-}
+using socket_t = int;
 
 #endif //SIMPLESOCKET_LINUX_DETAILS_HPP
