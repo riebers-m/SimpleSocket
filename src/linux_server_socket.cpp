@@ -70,19 +70,24 @@ namespace simple {
 
     ServerSocket::~ServerSocket() {
         std::lock_guard lock{m_mutex};
-        close();
+        if(isOpen()) {
+            close();
+        }
     }
 
     std::unique_ptr<ClientSocket> ServerSocket::accept(std::chrono::milliseconds t_timeout) {
         if(!isOpen()) {
-            throw SocketError(fmt::format("socket not open {}", m_socket));
+            throw SocketError(fmt::format("socket not open {}\n", m_socket));
         }
         pollfd fds[1];
         fds[0].fd = m_socket;
         fds[0].events = POLLIN;
 
-        if(const auto ret = poll(fds, 1, static_cast<int>(t_timeout.count()));ret < 0) {
-            throw SocketError(fmt::format("waiting for incoming connection failed on socket {}: {}", m_socket, strerror(errno)));
+        if(const auto ret = poll(fds, 1, static_cast<int>(t_timeout.count()));ret == 0) {
+            throw SocketTimeoutError(fmt::format("waiting for incoming connection failed on socket {}: {}\n", m_socket, strerror(errno)));
+        } else if(ret < 0) {
+            throw SocketError(fmt::format("waiting for incoming connection poll error on socket {}: {}\n", m_socket,
+                                          strerror(errno)));
         }
 
         sockaddr_in client = {0};
@@ -90,7 +95,7 @@ namespace simple {
 
         int clientSocket = ::accept(m_socket, reinterpret_cast<sockaddr*>(&client), &client_addrLen);
         if (clientSocket == -1) {
-            throw SocketError(fmt::format("could not accept incoming connection on socket {}: {}", m_socket, strerror(errno)));
+            throw SocketError(fmt::format("could not accept incoming connection on socket {}: {}\n", m_socket, strerror(errno)));
         }
         return std::make_unique<ClientSocket>(clientSocket, Peer{inet_ntoa(client.sin_addr),
                                                std::to_string(ntohs(client.sin_port))}, true);
