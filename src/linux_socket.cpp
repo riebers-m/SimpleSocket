@@ -21,12 +21,10 @@ namespace simple {
         if(!m_is_open) {
             throw SocketError(fmt::format("socket not open"));
         }
-
-        std::vector<char> buffer(m_buffer_size);
-
         std::lock_guard lock{m_mutex};
+        char tmp_buffer[DEFAULT_BUFFER_SIZE] = {0};
 
-        const auto read = recv(m_socket, buffer.data(), buffer.size(), 0);
+        const auto read = recv(m_socket, tmp_buffer, sizeof(tmp_buffer), 0);
 
         if (read == 0) {
             throw SocketShutdownError(fmt::format("peer has shutdown connection on socket {}", m_socket));
@@ -34,7 +32,7 @@ namespace simple {
         if (read == -1) {
             throw SocketError(fmt::format("reading from socket failed: {}", strerror(errno)));
         }
-        return buffer;
+        return std::vector<char>{tmp_buffer, tmp_buffer+read};
     }
 
     void TcpSocket::close() {
@@ -56,7 +54,7 @@ namespace simple {
     void TcpSocket::send(std::vector<char> const &message) {
         if (message.empty()) { return; }
         if(!m_is_open) {
-            throw SocketError(fmt::format("socket not open"));
+            throw SocketShutdownError(fmt::format("socket not open"));
         }
 
         ssize_t sent_bytes = 0;
