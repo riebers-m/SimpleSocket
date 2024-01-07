@@ -4,6 +4,7 @@
 #include <string>
 #include <functional>
 #include <atomic>
+#include <chrono>
 #include "internal/exceptions.hpp"
 #include "internal/simple_types.hpp"
 
@@ -43,6 +44,7 @@ namespace simple {
 
         ClientSocket();
         explicit ClientSocket(socket_t t_sock, Peer const &t_peer, bool t_is_open=true);
+
         virtual ~ClientSocket();
 
         void connect(std::string_view const host, std::string_view const port);
@@ -61,9 +63,9 @@ namespace simple {
         ServerSocket();
         virtual ~ServerSocket();
 
-        void bindAndListen(std::string_view port, int t_backlog= 5);
+        void bindAndListen(std::string_view port, int t_backlog, bool t_non_blocking);
         void setAcceptCallback(ServerSocket::AcceptCallback const &accept_callback);
-        ClientSocket accept();
+        std::unique_ptr<ClientSocket> accept(std::chrono::milliseconds t_timeout);
     private:
         AcceptCallback m_accept_callback;
         std::atomic<bool> m_runnig{false};

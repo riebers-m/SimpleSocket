@@ -29,7 +29,7 @@ namespace simple {
         const auto read = recv(m_socket, buffer.data(), buffer.size(), 0);
 
         if (read == 0) {
-            throw SocketError("peer has shutdown connection");
+            throw SocketShutdownError(fmt::format("peer has shutdown connection on socket {}", m_socket));
         }
         if (read == -1) {
             throw SocketError(fmt::format("reading from socket failed: {}", strerror(errno)));

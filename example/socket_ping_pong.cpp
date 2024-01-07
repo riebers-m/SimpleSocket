@@ -34,14 +34,22 @@ void run_client() {
 }
 
 void run_server_sock() {
-    auto sock = simple::ServerSocket{};
-    sock.bindAndListen("5000");
-    auto new_sock = sock.accept();
 
-    fmt::print("accepted new connection from {}:{}\n", new_sock.getPeer().host, new_sock.getPeer().service);
+    auto sock = simple::ServerSocket{};
+    sock.bindAndListen("5000", 0, true);
+    std::unique_ptr<simple::ClientSocket> new_sock = nullptr;
+    try {
+        new_sock = sock.accept(60s);
+
+    } catch(simple::SocketError const & e) {
+        fmt::print("{}", e.what());
+        return;
+    }
+
+    fmt::print("accepted new connection from {}:{}\n", new_sock->getPeer().host, new_sock->getPeer().service);
 
     bool running = true;
-    new_sock.setReceiveCallback([&running](std::vector<char> const & data) -> std::vector<char> {
+    new_sock->setReceiveCallback([&running](std::vector<char> const & data) -> std::vector<char> {
         fmt::print("recieved data: {}", data.data());
         std::string_view view{data};
         if(view.contains("quit")) {
@@ -52,12 +60,12 @@ void run_server_sock() {
             return data;
         }
     });
-    new_sock.run();
+    new_sock->run();
 
-    while(running) {
+    while(running && new_sock->isOpen()) {
         std::this_thread::sleep_for(2s);
     }
-    new_sock.stop();
+    new_sock->stop();
 }
 int main(int argc, const char **argv) {
     run_server_sock();

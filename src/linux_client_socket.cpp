@@ -2,9 +2,6 @@
 // Created by max on 05.01.24.
 //
 #include <thread>
-#include <netdb.h>
-#include <thread>
-#include <poll.h>
 #include "simple_socket.hpp"
 #include "fmt/color.h"
 
@@ -80,10 +77,18 @@ namespace simple {
                 }
 
                 if (m_callback) {
+                    // TODO: remove this
                     fmt::print("reading from socket\n");
-
-                    if(const auto response = m_callback(read());!response.empty()) {
-                        send(response);
+                    try {
+                        if(const auto response = m_callback(read());!response.empty()) {
+                            send(response);
+                        }
+                    } catch(SocketShutdownError const & e) {
+                        fmt::print("{}", e.what());
+                        setIsOpen(false);
+                        return;
+                    } catch(SocketError const & e) {
+                        fmt::print("communication error on socket {}: {}", m_socket, e.what());
                     }
                 }
             }
@@ -114,6 +119,4 @@ namespace simple {
     void ClientSocket::stop() {
         shutDown();
     }
-
-
 }
