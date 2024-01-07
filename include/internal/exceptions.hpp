@@ -30,7 +30,15 @@ namespace simple {
 
     };
 
+    class SocketTimeoutError : public SocketError {
+    public:
+        explicit SocketTimeoutError(std::string_view const message, std::string_view const file, auto line ) :
+                SocketError(message, file, line) {}
+
+    };
+
 #define SocketError(message) SocketError{message, __FILE__, __LINE__}
 #define SocketShutdownError(message) SocketShutdownError{message, __FILE__, __LINE__}
+#define SocketTimeoutError(message) SocketTimeoutError{message, __FILE__, __LINE__}
 }
 #endif //SIMPLESOCKET_EXCEPTIONS_HPP
