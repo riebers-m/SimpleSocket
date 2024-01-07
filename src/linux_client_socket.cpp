@@ -77,8 +77,6 @@ namespace simple {
                 }
 
                 if (m_callback) {
-                    // TODO: remove this
-                    fmt::print("reading from socket\n");
                     try {
                         if(const auto response = m_callback(read());!response.empty()) {
                             send(response);
@@ -113,7 +111,9 @@ namespace simple {
         if(s_worker.joinable()) {
             s_worker.join();
         }
-        close();
+        if(isOpen()) {
+            close();
+        }
     }
 
     void ClientSocket::stop() {
