@@ -11,7 +11,7 @@
 namespace simple {
     struct Peer {
         std::string host;
-        std::string service;
+        std::uint16_t port;
     };
 
     class TcpSocket {
@@ -47,7 +47,7 @@ namespace simple {
 
         virtual ~ClientSocket();
 
-        void connect(std::string_view const host, std::string_view const port);
+        void connect(std::string_view const host, std::uint16_t port);
         void setReceiveCallback(ReceiveCallback const &callback);
         void run();
         void stop();

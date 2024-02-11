@@ -13,7 +13,7 @@ namespace simple {
 
     }
 
-    void ClientSocket::connect(std::string_view const host, std::string_view const port) {
+    void ClientSocket::connect(std::string_view const host, std::uint16_t port) {
         struct addrinfo hints = {0};
         struct addrinfo *result, *rp = nullptr;
 
@@ -23,7 +23,7 @@ namespace simple {
         hints.ai_flags = 0;
         hints.ai_protocol = 0;          /* Any protocol */
 
-        if (auto ret = getaddrinfo(host.data(), port.data(), &hints, &result);ret != 0) {
+        if (auto ret = getaddrinfo(host.data(), std::to_string(port).c_str(), &hints, &result);ret != 0) {
             throw SocketError(fmt::format("could not resolve address: {}", gai_strerror(ret)));
         }
 
@@ -44,7 +44,7 @@ namespace simple {
         if (rp == nullptr) {               /* No address succeeded */
             throw SocketError("could not connect");
         }
-        setPeer({std::string{host}, std::string{port}});
+        setPeer({std::string{host}, port});
         setIsOpen(true);
     }
 

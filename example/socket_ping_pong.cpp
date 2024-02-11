@@ -9,7 +9,7 @@ void run_client() {
     try {
         bool running = true;
         auto sock = simple::ClientSocket{};
-        sock.connect("localhost", "5000");
+        sock.connect("localhost", 5000);
 
         sock.setReceiveCallback([&running](std::vector<char> const & data) -> std::vector<char> const {
             fmt::print("recieved data: {}", data.data());
@@ -46,7 +46,7 @@ void run_server_sock() {
         return;
     }
 
-    fmt::print("accepted new connection from {}:{}\n", new_sock->getPeer().host, new_sock->getPeer().service);
+    fmt::print("accepted new connection from {}:{}\n", new_sock->getPeer().host, new_sock->getPeer().port);
 
     bool running = true;
     new_sock->setReceiveCallback([&running](std::vector<char> const & data) -> std::vector<char> {

@@ -98,7 +98,7 @@ namespace simple {
             throw SocketError(fmt::format("could not accept incoming connection on socket {}: {}\n", m_socket, strerror(errno)));
         }
         return std::make_unique<ClientSocket>(clientSocket, Peer{inet_ntoa(client.sin_addr),
-                                               std::to_string(ntohs(client.sin_port))}, true);
+                                               ntohs(client.sin_port)}, true);
 
     }
 
