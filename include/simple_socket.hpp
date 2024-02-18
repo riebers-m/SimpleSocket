@@ -5,8 +5,12 @@
 #include <functional>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
+#include <thread>
+#include <mutex>
 #include "internal/exceptions.hpp"
 #include "internal/simple_types.hpp"
+#include "internal/unique_value.hpp"
 
 namespace simple {
     struct Peer {
@@ -14,60 +18,82 @@ namespace simple {
         std::uint16_t port;
     };
 
-    class TcpSocket {
-    public:
-        TcpSocket();
-
-        void send(std::string_view const message);
-        void send(std::vector<char> const &message);
-        [[nodiscard]] Peer const &getPeer() const;
-        void setPeer(Peer const &peer);
-        [[nodiscard]] bool isOpen() const;
-        void setIsOpen(bool isOpen);
-
+    class BaseSocket {
     protected:
-        explicit TcpSocket(socket_t sock, Peer const &t_peer);
-        [[nodiscard]] std::vector<char> read();
-        void close();
-    protected:
-        socket_t m_socket;
-        std::mutex m_mutex;
-    private:
-        std::size_t m_buffer_size;
-        Peer m_peer;
+        using unique_deleter = void(*)(socket_t);
+        UniqueValue<socket_t, unique_deleter> m_socket;
         bool m_is_open;
+        explicit BaseSocket(socket_t socket);
+        BaseSocket(socket_t, unique_deleter);
+    public:
+        [[nodiscard]] std::optional<socket_t> socket_handle() const {
+            if(m_socket.has_value()) {
+                return m_socket.value();
+            }
+            return std::nullopt;
+        }
     };
 
-    class ClientSocket : public TcpSocket {
+    class Client : public BaseSocket {
+        friend class Sockets;
+        friend class ServerSocket;
     public:
         using ReceiveCallback = std::function<std::vector<char>(std::vector<char> const & request)>;
 
-        ClientSocket();
-        explicit ClientSocket(socket_t t_sock, Peer const &t_peer, bool t_is_open=true);
+        Client(Client &&) noexcept;
+        Client& operator=(Client &&) noexcept;
+        ~Client();
 
-        virtual ~ClientSocket();
+        std::size_t send(std::string_view const message);
+        std::size_t send(std::vector<char> const &message);
 
-        void connect(std::string_view const host, std::uint16_t port);
-        void setReceiveCallback(ReceiveCallback const &callback);
-        void run();
-        void stop();
-        void shutDown();
+        [[nodiscard]] bool is_open() const;
+        void close();
+
+    private:
+        explicit Client(socket_t, ReceiveCallback callback, Peer const &peer);
+        Client(socket_t, Client::ReceiveCallback const &);
+        Client(std::string const &host, std::uint16_t port, ReceiveCallback callback);
+
+        std::vector<char> receive() const;
+        std::string receive_string() const;
+        void waiting_for_incoming_message(std::stop_token const&);
+
+    private:
+        bool m_is_open;
+        Peer m_peer;
+    public:
+        Peer const &getPeer() const;
+
     private:
         ReceiveCallback m_callback;
+        std::mutex mutable m_mutex;
+        std::jthread m_worker;
     };
 
-    class ServerSocket : public TcpSocket {
+    class ServerSocket : public BaseSocket {
+        friend class Sockets;
+
     public:
-        using AcceptCallback = std::function<void(std::vector<char> const &)>;
+        enum class blocking {
+            not_blocking,
+            blocking
+        };
 
-        ServerSocket();
-        virtual ~ServerSocket();
+        ServerSocket(ServerSocket &&) noexcept = default;
+        ServerSocket& operator=(ServerSocket &&) noexcept = default;
 
-        void bindAndListen(std::string_view port, int t_backlog, bool t_non_blocking);
-        void setAcceptCallback(ServerSocket::AcceptCallback const &accept_callback);
-        std::unique_ptr<ClientSocket> accept(std::chrono::milliseconds t_timeout);
+        [[nodiscard]] Client accept(const Client::ReceiveCallback& callback);
+        [[nodiscard]] bool is_open() const;
+        void close();
+
     private:
-        AcceptCallback m_accept_callback;
-        std::atomic<bool> m_runnig{false};
+        std::chrono::milliseconds m_accept_timeout{1};
+        bool m_is_open;
+
+        explicit ServerSocket(std::uint16_t port, blocking accept_blocking,
+                              std::chrono::milliseconds const &accept_timeout = std::chrono::milliseconds(1));
+
+
     };
 }

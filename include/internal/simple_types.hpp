@@ -27,9 +27,5 @@ enum class socket_type {
     UDP,
 };
 
-int convert_address_family(address_family);
-int convert_socket_type(socket_type);
-
-
 }
 #endif //SIMPLESOCKET_SIMPLE_TYPES_HPP
