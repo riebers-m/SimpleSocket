@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.27)
 project(
         SimpleSocket
-        VERSION 0.4.0
+        VERSION 0.5.0
         LANGUAGES C CXX
 )
 #add_subdirectory(fmt)
