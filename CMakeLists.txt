@@ -4,9 +4,13 @@ project(
         VERSION 0.4.0
         LANGUAGES C CXX
 )
-add_subdirectory(fmt)
+#add_subdirectory(fmt)
 
-set(CMAKE_CXX_STANDARD 23)
+include(cmake/CPM.cmake)
+
+CPMAddPackage("gh:fmtlib/fmt#11.1.4")
+
+set(CMAKE_CXX_STANDARD 20)
 message(STATUS "Compiling ${PROJECT_NAME} with version ${PROJECT_VERSION}")
 
 

@@ -5,7 +5,7 @@ import time
 
 def ping(num: int):
     client_socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(("localhost", 12345))
+    client_socket.connect(("localhost", 1234))
     start = time.time()
     while (time.time() - start) < 8:
         client_socket.sendall(f"ping".encode())

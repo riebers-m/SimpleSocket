@@ -15,20 +15,19 @@ namespace simple {
         }
     }
 
-    BaseSocket::BaseSocket(socket_t socket) : m_socket{socket, socket_deleter}, m_is_open{false} {
+    BaseSocket::BaseSocket(socket_t socket, bool is_open) : m_socket{socket, socket_deleter}, m_is_open{is_open} {
 
     }
 
-    BaseSocket::BaseSocket(socket_t socket, BaseSocket::unique_deleter deleter) : m_socket{socket, deleter},
-                                                                                  m_is_open{false} {
+    BaseSocket::BaseSocket(socket_t socket, BaseSocket::unique_deleter deleter, bool is_open) : m_socket{socket, deleter},
+                                                                                  m_is_open{is_open} {
 
     }
 
     static socket_t initialize_and_connect(std::string const &host, std::uint16_t port);
 
     Client::Client(socket_t socket, ReceiveCallback callback, Peer const &peer) :
-            BaseSocket(socket),
-            m_is_open{true},
+            BaseSocket(socket, true),
             m_peer{peer},
             m_callback{std::move(callback)},
             m_mutex() {
@@ -269,8 +268,7 @@ namespace simple {
     }
 
     ServerSocket::ServerSocket(std::uint16_t port, blocking accept_blocking, std::chrono::milliseconds const &accept_timeout) :
-            BaseSocket(initialize_bind_and_listen(port, accept_blocking)),
-            m_is_open{true},
+            BaseSocket{initialize_bind_and_listen(port, accept_blocking), true},
             m_accept_timeout{accept_timeout}{ }
 
     bool ServerSocket::is_open() const {

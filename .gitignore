@@ -1,3 +1,5 @@
-/fmt
+.vscode
+.cache
+/build*
 /cmake-build*
 .idea

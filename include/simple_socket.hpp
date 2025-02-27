@@ -23,8 +23,8 @@ namespace simple {
         using unique_deleter = void(*)(socket_t);
         UniqueValue<socket_t, unique_deleter> m_socket;
         bool m_is_open;
-        explicit BaseSocket(socket_t socket);
-        BaseSocket(socket_t, unique_deleter);
+        explicit BaseSocket(socket_t socket, bool is_open=false);
+        BaseSocket(socket_t, unique_deleter, bool is_open=false);
     public:
         [[nodiscard]] std::optional<socket_t> socket_handle() const {
             if(m_socket.has_value()) {
@@ -60,7 +60,6 @@ namespace simple {
         void waiting_for_incoming_message(std::stop_token const&);
 
     private:
-        bool m_is_open;
         Peer m_peer;
     public:
         Peer const &getPeer() const;
@@ -89,7 +88,6 @@ namespace simple {
 
     private:
         std::chrono::milliseconds m_accept_timeout{1};
-        bool m_is_open;
 
         explicit ServerSocket(std::uint16_t port, blocking accept_blocking,
                               std::chrono::milliseconds const &accept_timeout = std::chrono::milliseconds(1));

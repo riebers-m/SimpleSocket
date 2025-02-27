@@ -1,4 +1,5 @@
 #include "simple_sockets.hpp"
+#include <fmt/base.h>
 #include <fmt/color.h>
 #include <thread>
 #include <chrono>
@@ -38,7 +39,7 @@ public:
     explicit Server(std::uint16_t port) :
     m_clients(),
     m_server_socket(simple::Sockets::create_server(port, simple::ServerSocket::blocking::blocking)) {
-        std::jthread{[this]() {
+        std::jthread{[this,&port]() {
             auto client_callback = [](std::vector<char> const& request)->std::vector<char> {
                 fmt::println("received: {}", std::string{request.cbegin(), request.cend()});
                 const char* response = "pong";
@@ -47,6 +48,7 @@ public:
             while(m_server_socket.is_open()) {
                 try {
                     auto client = m_server_socket.accept(client_callback);
+                    fmt::println("connected with client: {}", client.getPeer().host);
                     m_clients.push_back(std::move(client));
                 } catch(simple::SocketTimeoutError const&) {
                     continue;
@@ -60,6 +62,12 @@ public:
     void stop() {
         m_server_socket.close();
     }
+
+    ~Server() {
+        for(auto&& client : m_clients) {
+            client.close();
+        }
+    }
 private:
 
     std::vector<simple::Client> m_clients;
@@ -67,9 +75,11 @@ private:
 };
 
 void run_server() {
-    auto server = Server{12345};
+    auto constexpr port = 1234;
+    fmt::print("Starting server on port: {}", port);
+    auto server = Server{port};
 
-    std::this_thread::sleep_for(10s);
+    std::this_thread::sleep_for(100s);
     fmt::println("shutting server down");
     server.stop();
 }
