@@ -3,6 +3,7 @@
 #include <fmt/color.h>
 #include <thread>
 #include <chrono>
+#include <stdint.h>
 
 using namespace std::chrono_literals;
 
@@ -74,7 +75,7 @@ private:
     simple::ServerSocket m_server_socket;
 };
 
-void run_server() {
+void run_server(std::uint32_t port, std::string address) {
     auto constexpr port = 1234;
     fmt::print("Starting server on port: {}", port);
     auto server = Server{port};
@@ -84,7 +85,12 @@ void run_server() {
     server.stop();
 }
 
-int main() {
+int main(int argc, const char* argv[]) {
+    if(argc < 3) {
+        fmt::println("usage: Server address and port for listening needed.");
+        fmt::println("E.g.: ./socket_ping_pong <address> <port>");
+        return -1;
+    }
     run_server();
     return 0;
 }
